@@ -57,3 +57,48 @@ class TestUtils(unittest.TestCase):
 
         series = utils.handle_duplicate_index(series, max_delta)
         assert_series_equal(series, expected_series)
+
+    def test_squash_into_window_one(self):
+        """test_squash_into_window1: one event in window"""
+        df = pandas.DataFrame([5, 6, 7, 8, 9], index=range(5))
+        df_squashed = utils.squash_into_window(df, (2.1, 2.9))
+
+        expected = pandas.DataFrame([7, 7], index=[2.1, 2.9])
+
+        self.assertTrue((df_squashed[0] == expected[0]).all())
+
+    def test_squash_into_window_multiple(self):
+        """test_squash_into_window1: multiple events in window"""
+        df = pandas.DataFrame([5, 6, 7, 8, 9], index=range(5))
+        df_squashed = utils.squash_into_window(df, (0.5, 2.9))
+
+        expected = pandas.DataFrame([5, 6, 7, 7], index=[0.5, 1, 2, 2.9])
+
+        self.assertTrue((df_squashed[0] == expected[0]).all())
+
+    def test_squash_into_window_none_after(self):
+        """test_squash_into_window1: no event after window"""
+        df = pandas.DataFrame([5, 6], index=range(2))
+        df_squashed = utils.squash_into_window(df, (0.5, 2.9))
+
+        expected = pandas.DataFrame([5, 6, 6], index=[0.5, 1, 2.9])
+
+        self.assertTrue((df_squashed[0] == expected[0]).all())
+
+    def test_squash_into_window_none_before(self):
+        """test_squash_into_window1: no event before window"""
+        df = pandas.DataFrame([6, 7], index=[1, 2])
+        df_squashed = utils.squash_into_window(df, (0.5, 2.9))
+
+        expected = pandas.DataFrame([6, 7, 7], index=[1, 2, 2.9])
+
+        self.assertTrue((df_squashed[0] == expected[0]).all())
+
+    def test_squash_into_window_none_inside(self):
+        """test_squash_into_window1: no event inside window"""
+        df = pandas.DataFrame([5, 6], index=range(2))
+        df_squashed = utils.squash_into_window(df, (0.1, 0.9))
+
+        expected = pandas.DataFrame([5, 5], index=[0.1, 0.9])
+
+        self.assertTrue((df_squashed[0] == expected[0]).all())

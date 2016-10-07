@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+import pandas as pd
+
 """Generic functions that can be used in multiple places in trappy
 """
 
@@ -102,3 +104,84 @@ def handle_duplicate_index(data,
             dup_index_left += 1
 
     return data.reindex(new_index)
+
+def squash_into_window(df, window):
+    """Take a slice of a series, assuming that values don't change between events
+
+    This function takes a slice of a series, copying the last event that occured
+    before the window to the beginning of the window, and the last event inside
+    the window to the end of the window. That is, assuming there are, in the
+    input, events both before and during the window, the output will have an
+    event at the beginning and at the end of the window.
+
+    For example, consider this (sparse) series:
+
+    ====== =======
+     Time   Value
+    ====== =======
+      0      0
+      2      1
+      8      0
+      9      1
+     12      1
+    ====== =======
+
+    If this series bears the assumption that the value does not change between
+    events, it be viewed like this (where '*' depicts events in the series, and
+    the dotted line represents the assumed value):
+
+          .. code::
+
+            1            *----------------------------+    *--------------*
+                         |                            |    |
+            0  *---------+                            *----+
+               0    1    2    3    4    5    6    7   8    9    10   11   12
+
+    If this series were naively windowed between time values 5 and 11 it would
+    look like this:
+
+          .. code::
+
+            1                                              *----+
+                                                           |    |
+            0                                         *----+    *
+                                        5    6    7   8    9    10   11
+
+                                        | <-------  window  -------> |
+
+    The value is lost between time values 5 - 8 and 10 - 11.
+
+    This function would duplicate the events at times 2 and 10 to occur at times
+    5 and 11 respectively, like so:
+
+          .. code::
+
+            1                                              *----+
+                                                           |    |
+            0                           *-------------*----+    *----*
+                                        5    6    7   8    9    10   11
+
+                                        | <-------  window  -------> |
+
+    """
+    start_time, end_time = window
+
+    window_df = df[(df.index >= start_time) & (df.index < end_time)]
+
+    # Get a DataFrame containing only the last event occuring before the start
+    # of the window
+    first_event_df = df[df.index < start_time].iloc[-1:]
+    if not first_event_df.empty:
+        # Bump the time value for that event up to the beginning of the window.
+        first_event_df.index = [start_time]
+
+    df = pd.concat([first_event_df, window_df])
+
+    # Get a DataFrame containing only the last event occuring before the end
+    # of the window
+    last_event_df = df[df.index <= end_time].iloc[-1:]
+    if not last_event_df.empty:
+        # Bump the time value for that event up to the end of the window.
+        last_event_df.index = [end_time]
+
+    return pd.concat([df, last_event_df])
