@@ -123,6 +123,7 @@ var ILinePlot = ( function() {
             stepPlot: t_info.step_plot,
             logscale: t_info.logscale,
             fillGraph: t_info.fill_graph,
+            fillAlpha: t_info.fill_alpha,
             labelsDiv: t_info.name + "_legend",
             errorBars: false,
             labelsSeparateLines: true,
