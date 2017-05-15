@@ -259,6 +259,14 @@ class Base(object):
         """
         self.data_frame.to_csv(fname)
 
+    def read_csv(self, fname):
+        """Read the csv data into a DataFrame
+
+        :param fname: The name of the CSV file
+        :type fname: str
+        """
+        self.data_frame = pd.read_csv(fname, index_col = 0)
+
     def normalize_time(self, basetime):
         """Substract basetime from the Time of the data frame
 
