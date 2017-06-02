@@ -14,6 +14,7 @@
 #
 
 import os
+import shutil
 import sys
 import unittest
 import utils_tests
@@ -97,3 +98,31 @@ class TestCaching(utils_tests.SetupDirectory):
 
         self.assertTrue([r[1].prio for r in cached_dfr.iterrows()] ==
                         [r[1].prio for r in uncached_dfr.iterrows()])
+
+    def test_invalid_cache_overwritten(self):
+        """Test a cache with a bad checksum is overwritten"""
+        # This is a directory so we can't use the files_to_copy arg of
+        # SetUpDirectory, just do it ourselves.
+        cache_path = ".trace.txt.cache"
+        src = os.path.join(utils_tests.TESTS_DIRECTORY, "trace_sched.txt.cache")
+        shutil.copytree(src, cache_path)
+
+        md5_path = os.path.join(cache_path, "md5sum")
+        def read_md5sum():
+            with open(md5_path) as f:
+                return f.read()
+
+        # Change 1 character of the stored checksum
+        md5sum = read_md5sum()
+        # Sorry, I guess modifying strings in Python is kind of awkward?
+        md5sum_inc = "".join(list(md5sum[:-1]) + [chr(ord(md5sum[-1]) + 1)])
+        with open(md5_path, "w") as f:
+            f.write(md5sum_inc)
+
+        # Parse a trace, this should delete and overwrite the invalidated cache
+        GenericFTrace.disable_cache = False
+        trace = trappy.FTrace()
+
+        # Check that the modified md5sum was overwritten
+        self.assertNotEqual(read_md5sum(), md5sum_inc,
+                            "The invalid ftrace cache wasn't overwritten")
