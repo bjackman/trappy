@@ -126,3 +126,25 @@ class TestCaching(utils_tests.SetupDirectory):
         # Check that the modified md5sum was overwritten
         self.assertNotEqual(read_md5sum(), md5sum_inc,
                             "The invalid ftrace cache wasn't overwritten")
+
+    def test_cache_dynamic_events(self):
+        """Test that caching works if new event parsers have been registered"""
+
+        # Parse the trace to create a cache
+        GenericFTrace.disable_cache = False
+        trace1 = trappy.FTrace()
+
+        # Check we're actually testing what we think we are
+        if hasattr(trace1, 'dynamic_event'):
+            raise RuntimeError('Test bug: found unexpected event in trace')
+
+        # Now register a new event type, call the constructor again, and check
+        # that the newly added event (which is not present in the cache) is
+        # parsed.
+
+        parse_class = trappy.register_dynamic_ftrace("DynamicEvent", "dynamic_test_key")
+
+        trace2 = trappy.FTrace()
+        self.assertTrue(len(trace2.dynamic_event.data_frame) == 1)
+
+        trappy.unregister_dynamic_ftrace(parse_class)
