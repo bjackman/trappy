@@ -148,3 +148,46 @@ class TestCaching(utils_tests.SetupDirectory):
         self.assertTrue(len(trace2.dynamic_event.data_frame) == 1)
 
         trappy.unregister_dynamic_ftrace(parse_class)
+
+    def test_cache_normalize_time(self):
+        """Test that caching doesn't break normalize_time"""
+        GenericFTrace.disable_cache = False
+
+        # Times in trace_sched.txt
+        start_time = 6550.018511
+        first_freq_event_time = 6550.056870
+
+        # Parse without normalizing time
+        trace1 = trappy.FTrace(events=['cpu_frequency', 'sched_wakeup'],
+                               normalize_time=False)
+
+        self.assertEqual(trace1.cpu_frequency.data_frame.index[0],
+                         first_freq_event_time)
+
+        # Parse with normalized time
+        trace2 = trappy.FTrace(events=['cpu_frequency', 'sched_wakeup'],
+                               normalize_time=True)
+
+        self.assertEqual(trace2.cpu_frequency.data_frame.index[0],
+                         first_freq_event_time - start_time)
+
+    def test_cache_window(self):
+        """Test that caching doesn't break the 'window' parameter"""
+        GenericFTrace.disable_cache = False
+
+        trace1 = trappy.FTrace(
+            events=['sched_wakeup'],
+            window=(0, 1))
+
+        # Check that we're testing what we think we're testing The trace
+        # contains 2 sched_wakeup events; this window should get rid of one of
+        # them.
+        if len(trace1.sched_wakeup.data_frame) != 1:
+            raise RuntimeError('Test bug: bad sched_wakeup event count')
+
+        # Parse again without the window
+        trace1 = trappy.FTrace(
+            events=['sched_wakeup'],
+            window=(0, None))
+
+        self.assertEqual(len(trace1.sched_wakeup.data_frame), 2)
