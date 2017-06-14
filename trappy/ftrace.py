@@ -184,14 +184,7 @@ subclassed by FTrace (for parsing FTrace coming from trace-cmd) and SysTrace."""
                     warnstr = "TRAPpy: Couldn't read {} from cache, reading it from trace".format(trace_class)
                     warnings.warn(warnstr)
 
-        if all([c.cached for c in self.trace_classes]):
-            return
-
         self.__parse_trace_file(self.trace_path)
-        self.finalize_objects()
-
-        if self.normalize_time:
-            self._normalize_time()
 
         if not self.__class__.disable_cache:
             try:
@@ -210,6 +203,9 @@ subclassed by FTrace (for parsing FTrace coming from trace-cmd) and SysTrace."""
                     "TRAPpy: Cache not created due to OS error: {0}".format(err))
 
         self.finalize_objects()
+
+        if self.normalize_time:
+            self._normalize_time()
 
     def __add_events(self, events):
         """Add events to the class_definitions
