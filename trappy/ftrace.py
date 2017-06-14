@@ -173,14 +173,18 @@ subclassed by FTrace (for parsing FTrace coming from trace-cmd) and SysTrace."""
 
     def _do_parse(self):
         if not self.__class__.disable_cache and self._check_trace_cache():
-            try:
-                # Read csv into frames
-                for trace_class in self.trace_classes:
+            # Read csv into frames
+            for trace_class in self.trace_classes:
+                try:
                     csv_file = self._get_csv_path(trace_class)
                     trace_class.read_csv(csv_file)
-                return
-            except:
-                warnings.warn("TRAPpy: Caching not used due to cache parsing error")
+                    trace_class.cached = True
+                except:
+                    warnstr = "TRAPpy: Couldn't read {} from cache, reading it from trace".format(trace_class)
+                    warnings.warn(warnstr)
+
+        if all([c.cached for c in self.trace_classes]):
+            return
 
         self.__parse_trace_file(self.trace_path)
         self.finalize_objects()
@@ -338,6 +342,8 @@ is part of the trace.
         cls_for_unique_word = {}
         for trace_name in self.class_definitions.iterkeys():
             trace_class = getattr(self, trace_name)
+            if trace_class.cached:
+                continue
 
             unique_word = trace_class.unique_word
             cls_for_unique_word[unique_word] = trace_class

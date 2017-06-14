@@ -113,6 +113,7 @@ class Base(object):
         self.pid_array = []
         self.cpu_array = []
         self.parse_raw = parse_raw
+        self.cached = False
 
     def finalize_object(self):
         pass
