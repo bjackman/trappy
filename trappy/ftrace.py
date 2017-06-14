@@ -101,7 +101,8 @@ subclassed by FTrace (for parsing FTrace coming from trace-cmd) and SysTrace."""
         os.mkdir(cache_path)
 
         md5sum = hashlib.md5(open(self.trace_path, 'rb').read()).hexdigest()
-        open(md5file, 'w').write(md5sum)
+        with open(md5file, 'w') as f:
+            f.write(md5sum)
 
     def _get_csv_path(self, trace_class):
         path = self._trace_cache_path()
